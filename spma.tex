@@ -1,0 +1,126 @@
+\documentclass[normal,cn, 11pt]{elegantnote}
+%\documentclass[UTF-8]{ctexart}
+
+%\usepackage{amsmath,amssymb,amsthm,amsfonts}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%\newenvironment{example}[1][Example]{
+%	\begin{trivlist}
+%		\item[\hskip \labelsep {\bfseries #1}]
+%	}{\end{trivlist}}
+%
+%\newenvironment{summary}[1][Summary]{
+%	\begin{trivlist}
+%		\item[\hskip \labelsep {\bfseries #1}]
+%	}{\end{trivlist}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title { 统计物理模型与算法介绍 }
+%\author {  }
+%\institute { Elegant \LaTeX {} Program }
+%\version {1.00}
+\date {}
+
+\begin{document}
+\maketitle
+
+\section{最大熵估计}\label{sec:max-entro}
+最大熵估计MEE是根据概率分布的熵(Entropy)最大化的原则来推断概率分布的形式。
+
+Let $\mathfrak{C} = \{\mathcal{C}_1, \mathcal{C}_2, \cdots, \mathcal{C}_n, \cdots\}$代表 Collection(Ensemble);
+
+Let $m_i = \{m_i(\mathcal{C}_1),m_i(\mathcal{C}_2), \cdots, m_i(\mathcal{C}_n), \cdots\}$代表观测值，$i = 1,2,\cdots,r$。
+
+$P(\mathcal{C}_i)$代表$\mathcal{C}_i$出现的概率,其满足：
+\begin{equation}\label{eq:p-sum}
+  \sum\limits_{\mathcal{C}} P(\mathcal{C}) = 1.
+\end{equation}
+
+$m_i^\ast$是已知的平均值。即有：
+\begin{equation}\label{eq:pingjun}
+  \sum\limits_{\mathcal{C}} P(\mathcal{C})\cdot m_i(\mathcal{C}) =  m_i^\ast .
+\end{equation}
+
+$S = - \sum\limits_{\mathcal{C}}P(\mathcal{C})\log(P(\mathcal{C}))$为概率分布$P(\mathcal{C})$的熵。最大化熵(用拉格朗日乘子法)知$P(\mathcal{C})$的分布为：
+\begin{equation}\label{eq:boltzmann}
+  P(\mathcal{C}) = \frac{1}{Z} e^{H(\mathcal{C})}.
+\end{equation}
+其中$Z = \sum\limits_{\mathcal{C}}e^{H(\mathcal{C})}$,$H(\mathcal{C})=\sum_{i=1}^{r}\theta_i m_i(\mathcal{C})$。$\theta_i$为参数，通过已知的平均值$m_i^\ast$求出来。
+
+\begin{note}
+以下的原则能用来得到最优函数：
+\begin{enumerate}
+  \item 最大熵原理：最优概率分布
+  \item 最小作业量原理：最优函数
+\end{enumerate}
+\end{note}
+
+\begin{note}
+一下有一些原则能用来对生成式概率模型估计参数：
+\begin{enumerate}
+  \item 误差最小化
+  \item 极大似然估计、EM算法：$\max p$
+  \item 变分推断（最小化KL散度）：$KL(q||p)$，用$q(x)$逼近$p(x)$
+  \item 能量最低原理（Gibbs自由能）：$E= -\log(p)$，$p$最大，$E$最小
+  \item 最短描述长度
+\end{enumerate}
+\end{note}
+\section{Metropolis准则：以概率来接受新状态}\label{sec:metroplois}
+假设当前系统的构型为$\mathcal{C}_n$，由于系统受到一定的干扰（随机性），系统的构型会发生改变，假设改变后的构型为$\mathcal{C}_{n+1}$，对应的，系统能量由$\mathbf{E}_n$变成$\mathbf{E}_{n+1}$。定义系统由$\mathcal{C}_n$到$\mathcal{C}_{n+1}$的接受概率为$p$：
+\begin{equation}\label{eq:accept}
+  p =
+  \begin{cases}
+    1, &  \mathbf{E}_{n+1} < \mathbf{E}_n ;\\
+    \exp(-\beta(\mathbf{E}_{n+1}-\mathbf{E}_n)), & \mathbf{E}_{n+1} \geq \mathbf{E}_n.
+  \end{cases}
+\end{equation}
+其中，$\beta=\frac{1}{T}$表示反温度，$T$表示系统温度。
+
+由第\ref{sec:max-entro}节的玻尔兹曼分布可知：构型的能量越低，其存在的概率越大。所以，如果构型改变后的能量变低了，这种改变以概率1被接受；否则，将以构型改变后的存在概率$\exp(-\beta\mathbf{E}_{n+1})$除以构型改变前的存在概率$\exp(-\beta\mathbf{E}_{n})$的可能性来接受这种改变。可以用电子跃迁来想象为何，电子从高能级一定可以跃向低能级，但从低能级跃迁到高能级的可能性就是其在高能级的概率除以低能级的概率，这种跃迁的可能性就是我们定义的接受概率。
+%$p(\mathbf{C})=\exp(-\frac{\mathbf{E}}{T}$
+
+我们定义的接受概率实际上是在给定温度$T$下系统是如何受到既有确定性（能量最小化）又有随机性（干扰）的影响来发生改变的。这是一种总体上是确定性又带有随机性的策略。
+%世界既非完全确定也非完全随机，或许这种总体上是确定性又带有随机性是所谓的真理吧。
+\section{模拟退火}\label{sec:simulate}
+
+我们依据Metropolis准则来叙述模拟退火算法：
+\begin{enumerate}
+  \item 在给定温度$T$下,随机改变系统的状态，应用Metropolis准则以概率$p$来接受新状态；
+  \item 降低温度，进行一次步骤1；直到温度达到给定温度为止。
+\end{enumerate}
+
+\begin{example}
+硬币实验
+%\url{http://www.github.com/liouqiouqiou/StatisticalPhysicsMA/SimulateAnneal.ipynb}%{硬币实验链接地址}
+\begin{enumerate}
+  \item $\beta$($\beta=1/T$)：反温度；
+  \item $\{\sigma_i\}$($\sigma_i \in \{-1, 1\}$, $i=1..N$): 硬币初始状态；
+  \item $E=\sum_{i=1}^N \sigma_i$: 硬币总能量；
+  \item 随机选择一个$i$, 尝试改变$i$硬币的状态$\sigma_i$：
+    $$\sigma_i \rightarrow -\sigma_i$$
+    $$E \rightarrow E'$$
+    $$\Delta E = E' - E$$
+  %\begin{align*}
+%    \sigma_i \rightarrow -\sigma_i \\
+%    E \rightarrow E' \\
+%    \Delta E = E' - E
+%  \end{align*}
+  \item 以$P_{flip}=min\{1, e^{-\beta \Delta E}\}$的概率翻转硬币$i$；
+  \item 重复4，5直到$\beta$增加到给定的$\beta_{final}$。
+\end{enumerate}
+\end{example}
+\section{马尔科夫链蒙特卡罗MCMC}\label{sec:mcmc}
+MCMC是用来给定已知的概率分布，采一些样本是其服从给定的分布。
+
+在此小节，我们将限制用MCMC采取由最大熵估计得到的概率分布。
+
+\begin{example}[]
+随机图MCMC采样
+\begin{enumerate}
+  \item 给定平均的边数$\langle E \rangle$,解出参数$\theta$：$\langle E \rangle = \binom{N}{2}\frac{e^{\theta}}{1+e^{\theta}}$；
+  \item 随机生成一个图$G$，再随机选取一对节点，改变边的状态(右边变无边，没变边右边)，得到新图$G'$；
+  \item 用Metropolis准则来接受新图$G'$，概率为$p=min\{1,e^{H(G')-H(G)}\}$；若接受新图，则选取其作为样本，否则，取原图作为样本；
+  \item $G_1 \rightarrow G_2 \rightarrow G_3 \rightarrow \cdots$
+\end{enumerate}
+\end{example}
+\end{document} 
